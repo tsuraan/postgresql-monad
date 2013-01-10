@@ -1,0 +1,21 @@
+Name:           postgresql-monad
+Version:        0.0.1
+Description:    A monadic wrapper around postgresql-simple
+License:        BSD3
+Author:         Jeremy Groven
+Maintainer:     Jeremy Groven
+Build-Type:     Simple
+Cabal-Version:  >=1.2
+
+Library
+  Build-Depends: base
+               , postgresql-simple
+               , bytestring
+               , random
+               , mtl >=2
+               , stm
+
+  Exposed-Modules: Database.PostgreSQL.Simple.Monad
+                 , Database.PostgreSQL.Simple.Monad.Pool
+
+  ghc-options: -Wall -O
