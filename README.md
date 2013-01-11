@@ -1,7 +1,15 @@
 This module wraps
 [postgresql-simple](http://hackage.haskell.org/package/postgresql-simple) to
-provide a convenient and composable transactions system.  As a quick example,
-one can write code like this:
+provide a monadic interface to postgres queries.  The main motivation behind
+this library is that postgres clustering is typically master/slave, where the
+master is the only writable postgres server, but all the slaves support read
+operations.  This library wraps the postgresql-simple Connection in a
+RxConnection that is a type parameterized with a ReadOnly or a ReadWrite
+indicator.  Queries can be written as pure read-only queries, or read-write
+queries.  Read-Write queries compose monadically with other Read-Write
+queries, and Read-Only queries compose with other Read-Only queries.
+Read-Write queries can call Read-Only ones using the "ro" function.  A small
+example of how things fit together follow:
 
     {-# LANGUAGE OverloadedStrings #-}
     {-|
@@ -92,7 +100,8 @@ one can write code like this:
       print msgid5
 
 
-So, basically transactions are composable, which is a bit nicer than having
-some functions manually use savepoints, while other functions use
-transactions, and only the documentation can tell you which are which.
+In addition to tracking read-only and read-write queries, this provides some
+useful helpers to do different actions to recover from integrity violations or
+missing data.  This module also has a Pool to help track read-only and
+read-write connections.
 
