@@ -5,6 +5,7 @@ module Database.PostgreSQL.Simple.Monad
 , PostgresM
 , ReadOnly
 , ReadWrite
+, SimpleError(..)
 , rxOrig
 , wrapRo
 , wrapRo'
@@ -91,7 +92,8 @@ wrapRw simpleConn = do
     else
       return $ Right $ RxConnection simpleConn Nothing
 
-runRw :: RxConnection ReadWrite -> PostgresM ReadWrite a -> IO (Either SimpleError a)
+runRw :: RxConnection ReadWrite -> PostgresM ReadWrite a
+      -> IO (Either SimpleError a)
 runRw conn (M act) =
   mask $ \restore -> do
     Simple.begin $ rxConn conn
