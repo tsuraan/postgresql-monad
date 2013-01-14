@@ -51,7 +51,7 @@ import Database.PostgreSQL.Simple ( SqlError, Connection, Query, ToRow, FromRow 
 
 data SimpleError = SqlError SqlError
                  | UnknownError SomeException
-                 | NotFound
+                 | NotFound String
                  | Aborted String
                  deriving ( Show )
 
@@ -108,8 +108,8 @@ runRw conn (M act) =
 debug :: String -> PostgresM rx ()
 debug msg = M $ liftIO $ putStrLn msg
 
-abortNotFound :: PostgresM rx a
-abortNotFound = M $ Error.throwError NotFound
+abortNotFound :: String -> PostgresM rx a
+abortNotFound s = M $ Error.throwError $ NotFound s
 
 abortWithMessage :: String -> PostgresM rx a
 abortWithMessage msg = M $ Error.throwError $ Aborted msg
@@ -118,7 +118,7 @@ onNotFound :: PostgresM ReadWrite a -> PostgresM ReadWrite a
            -> PostgresM ReadWrite a
 onNotFound = onChecked isNotFound
   where
-  isNotFound NotFound = True
+  isNotFound (NotFound _) = True
   isNotFound _ = False
 
 onIntegrityViolation :: PostgresM ReadWrite a -> PostgresM ReadWrite a
