@@ -11,6 +11,7 @@ Library
   Build-Depends: base
                , postgresql-simple
                , bytestring
+               , containers
                , random
                , mtl >=2
                , stm

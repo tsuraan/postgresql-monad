@@ -1,11 +1,12 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving, ScopedTypeVariables, EmptyDataDecls
-           , OverloadedStrings #-}
+           , OverloadedStrings, FlexibleInstances #-}
 module Database.PostgreSQL.Simple.Monad
 ( RxConnection
 , PostgresM
 , ReadOnly
 , ReadWrite
 , SimpleError(..)
+, CanLive(alive, close)
 , rxOrig
 , wrapRo
 , wrapRo'
@@ -67,6 +68,32 @@ data RxConnection rx = RxConnection
   , rxOrig :: Maybe (RxConnection ReadWrite)
   }
 
+class CanLive a where
+  close :: a -> IO ()
+  alive :: a -> IO Bool
+
+instance CanLive (RxConnection ReadOnly) where
+  close (RxConnection c _) = catch (Simple.close c)
+                                   (\(_::SqlError) -> return ())
+
+  alive (RxConnection c _) =
+    catch (do _ <- Simple.execute_ c "BEGIN; ROLLBACK;"
+              return True)
+          (\(_ :: SqlError) -> do
+            Simple.close c
+            return False)
+
+instance CanLive (RxConnection ReadWrite) where
+  close (RxConnection c _) = catch (Simple.close c)
+                                   (\(_::SqlError) -> return ())
+
+  alive (RxConnection c _) =
+    catch (do _ <- Simple.execute_ c "BEGIN; ROLLBACK;"
+              return True)
+          (\(_ :: SqlError) -> do
+            Simple.close c
+            return False)
+
 newtype PostgresMReader rx = State { readerConn :: RxConnection rx }
 
 newtype PostgresM rx a =
@@ -106,13 +133,13 @@ runRw conn (M act) =
     return result
     
 debug :: String -> PostgresM rx ()
-debug msg = M $ liftIO $ putStrLn msg
+debug = M . liftIO . putStrLn
 
 abortNotFound :: String -> PostgresM rx a
-abortNotFound s = M $ Error.throwError $ NotFound s
+abortNotFound = M . Error.throwError . NotFound
 
 abortWithMessage :: String -> PostgresM rx a
-abortWithMessage msg = M $ Error.throwError $ Aborted msg
+abortWithMessage = M . Error.throwError . Aborted
 
 onNotFound :: PostgresM ReadWrite a -> PostgresM ReadWrite a
            -> PostgresM ReadWrite a
