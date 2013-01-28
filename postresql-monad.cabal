@@ -1,5 +1,5 @@
 Name:           postgresql-monad
-Version:        0.0.3
+Version:        0.0.4
 Description:    A monadic wrapper around postgresql-simple
 License:        BSD3
 Author:         Jeremy Groven
