@@ -22,9 +22,10 @@ import Data.ByteString        ( ByteString )
 import Data.List              ( partition )
 import Data.Set               ( Set )
 import Control.Applicative    ( (<$>), (<*>) )
-import Control.Exception      ( SomeException, catch )
-import Control.Concurrent     ( forkIO, myThreadId, killThread, threadDelay )
+import Control.Exception      ( catch )
+import Control.Concurrent     ( forkIO, threadDelay )
 import System.Random          ( randomRIO )
+import System.Timeout         ( timeout )
 -- import Debug.Trace            ( trace )
 
 import qualified Database.PostgreSQL.Simple.Monad as SM
@@ -130,12 +131,7 @@ relinquishRx rxConn conns connectors pool conn = do
 getRx :: (Pool -> TVar [b]) -> (b -> EiConn) -> Pool -> IO (Either String b)
 getRx poolTxConns eiConn pool = do
   connT <- newEmptyTMVarIO
-  catch
-    (do
-      me <- myThreadId
-      killer <- forkIO $ do
-        threadDelay $ 5 * seconds
-        killThread me
+  _ <- timeout (5 * seconds) (do
       atomically $ do
         conns <- readTVar $ poolTxConns pool
         case conns of
@@ -143,10 +139,8 @@ getRx poolTxConns eiConn pool = do
             writeTVar (poolTxConns pool) b
             modifyTVar (poolCheckedOut pool) (eiConn a:)
             putTMVar connT a
-          [] -> do
-            retry
-      killThread killer)
-    (\(_ :: SomeException) -> return ())
+          [] ->
+            retry)
 
   mVal <- atomically $ tryTakeTMVar connT
   case mVal of
