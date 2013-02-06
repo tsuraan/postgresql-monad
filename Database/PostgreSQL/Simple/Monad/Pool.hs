@@ -33,7 +33,7 @@ import qualified Database.PostgreSQL.Simple as PGS
 import Database.PostgreSQL.Simple.Monad ( RxConnection, ReadOnly, ReadWrite )
 import Database.PostgreSQL.Simple ( SqlError )
 
-import Prelude hiding ( init )
+import Prelude hiding ( init, catch )
 
 data Connector a = Connector
   { connectorAction :: IO (Maybe (RxConnection a))
