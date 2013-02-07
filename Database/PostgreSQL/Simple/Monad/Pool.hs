@@ -81,6 +81,7 @@ addServer pool connStr = atomically $ do
   if Set.member connStr known
     then return ()
     else do
+      writeTVar (poolServers pool) (Set.insert connStr known)
       mapM_ (writeTChan $ poolRoConnectors pool)
             (mkRoConnectors pool connStr)
       mapM_ (writeTChan $ poolRwConnectors pool)
